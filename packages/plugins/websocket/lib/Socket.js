@@ -1,11 +1,18 @@
-const WS = require('ws')
+'use strict'
+
+const WS = require('uws')
 const EventEmitter = require('events')
 
 class Socket extends EventEmitter {
   connect (url, fn) {
+    console.log(url)
     const sock = this.socket = new WS(url, ['xmpp'])
-    // WS doesn't support removeEventListener
-    sock.removeEventListener = sock.removeEventListener || sock.removeListener
+    sock.on('error', (err) => {
+      console.log(err)
+    })
+
+    const addListener = (sock.addEventListener || sock.on).bind(sock)
+    const removeListener = (sock.removeEventListener || sock.removeListener).bind(sock)
 
     const openHandler = () => {
       if (fn) fn()
@@ -17,17 +24,17 @@ class Socket extends EventEmitter {
       this.emit('error', err)
     }
     const closeHandler = () => {
-      sock.removeEventListener('open', openHandler)
-      sock.removeEventListener('message', messageHandler)
-      sock.removeEventListener('error', errorHandler)
-      sock.removeEventListener('close', closeHandler)
+      removeListener('open', openHandler)
+      removeListener('message', messageHandler)
+      removeListener('error', errorHandler)
+      removeListener('close', closeHandler)
       this.emit('close')
     }
 
-    sock.addEventListener('open', openHandler)
-    sock.addEventListener('message', messageHandler)
-    sock.addEventListener('error', errorHandler)
-    sock.addEventListener('close', closeHandler)
+    addListener('open', openHandler)
+    addListener('message', messageHandler)
+    // addListener('error', errorHandler)
+    addListener('close', closeHandler)
   }
 
   close (fn) {
